@@ -2,6 +2,12 @@ name: Production Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_to_play_store:
+        required: false
+        default: false
+        description: Publish to Play Store?
+        type: boolean
   release:
     types: [ released ]
 
@@ -11,14 +17,20 @@ env:
 jobs:
   play_promote_production:
     name: Play Publish Production
-    runs-on: ubuntu-latest
+    if: ${{ inputs.publish_to_play_store == true }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ruby/setup-ruby@v1
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
         with:
-          ruby-version: '3.2'
           bundler-cache: true
+
+      - name: Install Bundler
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
 
       - uses: ./.github/actions/inflate-secrets
         name: Inflate Secrets
@@ -29,4 +41,5 @@ jobs:
           firebase-creds: ${{ secrets.FIREBASECREDS }}
 
       - name: Promote Beta to Production Play Store
-        run: bundle exec fastlane promote_to_production
+        run: |
+          bundle exec fastlane promote_to_production
