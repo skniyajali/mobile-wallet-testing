@@ -1,0 +1,547 @@
+name: Multi-Platform App Build and Publish
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        type: choice
+        options:
+          - internal
+          - beta
+        default: internal
+        description: Release Type
+      publish_android:
+        type: boolean
+        default: false
+        description: Publish Android App On Play Store
+      publish_ios:
+        type: boolean
+        default: false
+        description: Publish iOS App On App Store
+      publish_desktop:
+        type: boolean
+        default: false
+        description: Publish Desktop Apps On App Store
+      publish_web:
+        type: boolean
+        default: true
+        description: Publish Web App
+      # turning off iOS build for now
+      build_ios:
+        type: boolean
+        default: false
+        description: Build iOS App
+
+permissions:
+  contents: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build_android:
+    name: Build Android Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - uses: ./.github/actions/inflate-secrets
+        name: Inflate Secrets
+        with:
+          keystore: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          google-services: ${{ secrets.GOOGLESERVICES }}
+          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
+          firebase-creds: ${{ secrets.FIREBASECREDS }}
+
+      - name: Build Release
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          VERSION_CODE: ${{ steps.rel_number.outputs.version-code }}
+        run: |
+          ./gradlew :mifospay-android:assembleRelease
+
+
+
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app
+          retention-days: 1
+          compression-level: 9
+          path: |
+            ./mifospay-android/build/outputs/apk/demo/release/mifospay-android-demo-release.apk
+            ./mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk
+
+
+
+
+
+
+
+  publish_android_on_firebase:
+    name: Deploy Android App On Firebase
+    needs: [ build_android, generate_release_info ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - uses: ./.github/actions/inflate-secrets
+        name: Inflate Secrets
+        with:
+          keystore: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          google-services: ${{ secrets.GOOGLESERVICES }}
+          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
+          firebase-creds: ${{ secrets.FIREBASECREDS }}
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-app
+          path: ./android-artifacts  # Specify a specific path to download
+
+      - name: List downloaded artifacts
+        run: |
+          ls -R ./android-artifacts  # List all downloaded files
+
+      - name: Download Beta Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: beta-changelog
+
+      - name: Move APK to build directory
+        run: |
+          mkdir -p ./mifospay-android/build/outputs/apk/prod/release/
+          mv ./android-artifacts/prod/release/mifospay-android-prod-release.apk ./mifospay-android/build/outputs/apk/prod/release/
+          mv ./changelogBeta ./mifospay-android/build/outputs/
+
+
+      - name: ☁️ Deploy to Firebase
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
+        run: ./gradlew appDistributionUploadProdRelease --no-configuration-cache
+
+  publish_android_on_playstore:
+    name: Publish Android App On Play Store
+    needs: [ build_android, generate_release_info ]
+    if: inputs.publish_android
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - uses: ./.github/actions/inflate-secrets
+        name: Inflate Secrets
+        with:
+          keystore: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          google-services: ${{ secrets.GOOGLESERVICES }}
+          playstore-creds: ${{ secrets.PLAYSTORECREDS }}
+          firebase-creds: ${{ secrets.FIREBASECREDS }}
+
+      - name: Build Release
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
+          VERSION_CODE: ${{ needs.generate_release_info.outputs.version_code }}
+        run: |
+          ./gradlew :mifospay-android:bundleRelease
+
+      - name: Archive Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aabs
+          path: ./**/*.aab
+
+      - name: Deploy to Playstore Internal
+        run: bundle exec fastlane deploy_internal
+
+      - name: Promote Internal to Beta
+        if: github.event.inputs.release_type == 'beta'
+        run: bundle exec fastlane promote_to_beta
+
+  build_ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+
+      - name: Build iOS App
+        if: inputs.build_ios
+        run: bundle exec fastlane ios build_ios
+
+      - name: Upload iOS Artifact
+        if: inputs.build_ios
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          retention-days: 1
+          compression-level: 9
+          path: mifospay-ios/mifospay-ios-app.ipa
+
+  publish_ios_app_to_firebase:
+    name: Publish iOS App On Firebase
+    if: inputs.publish_ios
+    needs: [ build_ios, generate_release_info ]
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Ruby
+        uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        with:
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install bundler:2.2.27
+          bundle install --jobs 4 --retry 3
+          bundle exec fastlane add_plugin firebase_app_distribution
+          bundle exec fastlane add_plugin increment_build_number
+
+
+      - name: Download iOS App
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-app
+
+      - name: Download Beta Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: beta-changelog
+
+      - name: Move APK to build directory
+        run: |
+          mv *.ipa ./mifospay-ios/
+          mv changelogBeta ./mifospay-android/build/outputs/
+
+
+
+      - name: Upload iOS App to Firebase Distribution
+        run: bundle exec fastlane ios deploy_on_firebase
+
+      - name: Print `git status`
+        run: git status
+
+  publish_ios_app_to_app_center:
+    needs: [ build_ios, generate_release_info ]
+    name: Publish iOS App On App Center
+    if: inputs.publish_ios
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-app
+
+      - name: Download Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: git-changelog
+
+      # Publish on App Store
+
+  build_desktop:
+    name: Build Desktop App
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Desktop App
+        env:
+          NOTARIZATION_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
+          NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+          NOTARIZATION_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+        run: ./gradlew packageReleaseDistributionForCurrentOS
+
+      - name: Upload Windows Apps
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}
+          retention-days: 1
+          compression-level: 9
+          path: |
+            ./mifospay-desktop/build/compose/binaries/main-release/exe/*.exe
+            ./mifospay-desktop/build/compose/binaries/main-release/msi/*.msi
+
+      - name: Upload Linux App
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}
+          retention-days: 1
+          compression-level: 9
+          path: './mifospay-desktop/build/compose/binaries/main-release/deb/*.deb'
+
+      - name: Upload MacOS App
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}
+          retention-days: 1
+          compression-level: 9
+          path: './mifospay-desktop/build/compose/binaries/main-release/dmg/*.dmg'
+
+  publish_desktop:
+    name: Publish Desktop App
+    needs: [ build_desktop ]
+    if: inputs.publish_desktop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Desktop Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-app-*
+          path: desktop-apps
+
+      # Publish on Desktop Store,
+      # print downloaded desktop artifacts
+      - name: Print `git status`
+        run: git status
+
+  build_web:
+    name: Build Web Application
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Build Web(JS) App
+        run: ./gradlew jsBrowserDistribution
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-app
+          path: './mifospay-web/build/dist/js/productionExecutable'
+
+  publish_web:
+    name: Publish Web App
+    needs: [ build_web ]
+    if: inputs.publish_web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      id-token: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Download Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-app
+          path: ./web-app-content
+
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './web-app-content'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  generate_release_info:
+    name: Generate Release Info
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.rel_number.outputs.version }}
+      version_code: ${{ steps.rel_number.outputs.version-code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - uses: ./.github/actions/create-release-number
+        name: Create Release Number
+        id: rel_number
+
+      - uses: ./.github/actions/create-release-notes
+        name: Create Release Notes
+        with:
+          tag-name: ${{ steps.rel_number.outputs.version }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload GitHub Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-changelog
+          path: './mifospay-android/build/outputs/changelogGithub'
+
+      - name: Upload Beta Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-changelog
+          path: './mifospay-android/build/outputs/changelogBeta'
+
+  github_release:
+    name: Create Github Release
+    needs: [ build_android, build_desktop, build_web, build_ios, generate_release_info ]
+    if: inputs.release_type == 'beta'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R ./all-artifacts
+
+      - name: Archive Web Build
+        shell: pwsh
+        run: |
+          Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/mifospay-web-app.zip'
+          
+      # Rename Ubuntu desktop artifact
+      - name: Rename Ubuntu Desktop Artifact
+        run: |
+          mv ./all-artifacts/desktop-app-ubuntu-latest/mifoswallet_1.0.0-1_amd64.deb ./all-artifacts/desktop-app-ubuntu-latest/MifosWallet-1.0.0.deb
+          
+
+      - name: Download Git Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: git-changelog
+
+      - name: Create Github Pre-Release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          tag_name: ${{ needs.generate_release_info.outputs.version }}
+          body_path: ./all-artifacts/git-changelog/changelogGithub
+          draft: false
+          prerelease: true
+          files: |
+            ./all-artifacts/android-app/prod/release/mifospay-android-prod-release.apk
+            ./all-artifacts/android-app/prod/release/mifospay-android-demo-release.apk
+            ./all-artifacts/desktop-app-windows-latest/MifosWallet-1.0.0.exe
+            ./all-artifacts/desktop-app-windows-latest/msi/MifosWallet-1.0.0.msi
+            ./all-artifacts/desktop-app-macos-latest/MifosWallet-1.0.0.dmg
+            ./all-artifacts/desktop-app-ubuntu-latest/MifosWallet-1.0.0.deb
+            ./all-artifacts/mifospay-web-app.zip
