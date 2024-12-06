@@ -247,14 +247,14 @@ jobs:
           # Specifies the name of the changelog artifact to download.
           name: beta-changelog
 
-      # Organize files for Firebase deployment
+       # Executes shell commands.
+       # Creates the necessary directory structure for the APK if it doesn't exist.
+       # Moves the downloaded release APK to the designated build output directory.
+       # Moves the downloaded changelog file to the build output directory.
       - name: Move APK to build directory
-        run: | #Executes shell commands.
-        # Creates the necessary directory structure for the APK if it doesn't exist.
+        run: |
           mkdir -p ./mifospay-android/build/outputs/apk/prod/release/
-        # Moves the downloaded release APK to the designated build output directory. 
           mv ./android-artifacts/prod/release/mifospay-android-prod-release.apk ./mifospay-android/build/outputs/apk/prod/release/
-        # Moves the downloaded changelog file to the build output directory.
           mv ./changelogBeta ./mifospay-android/build/outputs/
 
       # Deploy to Firebase App Distribution
@@ -478,16 +478,15 @@ jobs:
         with:
           name: beta-changelog
 
-      # Organize files for Firebase deployment
       # Sets the name of the step. Although the name mentions "APK," it's actually moving the iOS IPA file and the changelog.
       - name: Move APK to build directory
         # Moves any IPA file in the current directory to the mifospay-ios directory.
         # This is likely done to place the IPA file in the expected location for the Fastlane deployment lane.
-        run: |
-          mv *.ipa ./mifospay-ios/
         # Moves the changelogBeta file (presumably the downloaded changelog) to the mifospay-android/build/outputs/ directory.
         # This might be a mistake, as it's placing the iOS changelog in the Android build output directory.
         # It's possible this line should be adjusted to place the changelog in a more appropriate location for the iOS deployment.
+        run: |
+          mv *.ipa ./mifospay-ios/
           mv changelogBeta ./mifospay-android/build/outputs/
 
 
