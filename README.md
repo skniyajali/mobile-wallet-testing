@@ -32,10 +32,7 @@ Following recommended architecture and design patterns, the application is devel
 - **iOS App**: Select the `mifospay-ios` run configuration and click **Run**.
 
 > \[!Important]
-> To run the iOS app, you need to have a macOS device with Xcode installed.
-
-> \[!Note]
-> Currently, the `mifospay-web-wasm` app is not working as expected. We are working on it and will be available soon.
+> To run the iOS app, you must have a macOS device with Xcode installed. Currently, the `mifospay-web-wasm` app is not working as expected. We are working on it and it will be available soon.
 
 ### Demo Credentials
 - **Fineract Instance**: `venus.mifos.io`
