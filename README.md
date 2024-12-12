@@ -50,18 +50,12 @@ The issues should be raised via the GitHub issue tracker. For Issue tracker guid
 ### Branch Policy
 For development purposes, always pull from the **dev** branch, as all contributions and updates are merged into this branch. Upon completion of development, changes are subsequently merged into the **master** branch, which represents the stable and bug-free version of the code.
 
-For more detailed information about the branch policies, please refer to the [Branch Policy](https://github.com/openMF/mobile-wallet/wiki/Branch-Policy).
-
 ### Development Setup
-Please refer to the  [Development Setup Guide](https://github.com/openMF/mobile-wallet/wiki/Development-Setup) for detailed instructions on configuring the development environment.
+Please refer to the  [Development Setup Guide](https://github.com/openMF/mobile-wallet/wiki/Set-up-an-environment) for detailed instructions on configuring the development environment.
 
 ### Committing Your Changes
 After making changes in your local repository, you will need to commit them to your GitHub repository.
 If you are unfamiliar with the process of committing changes, please refer to the [Committing Your Changes](https://github.com/openMF/mobile-wallet/wiki/Committing-Your-Changes) guide.
-
-### Making a Pull Request
-Once your changes have been pushed to your forked repository, you can create a pull request to propose integrating your updates into the main project.  
-For guidance on creating a pull request, please visit the [Making a Pull Request](https://github.com/openMF/mobile-wallet/wiki/Making-a-Pull-Request) guide.
 
 ### Squashing Your Commits
 To ensure a clean and organized Git history, contributors are encouraged to squash their commits before merging.  
