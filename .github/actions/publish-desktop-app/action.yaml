@@ -69,8 +69,8 @@ runs:
       with:
         name: Windows-Apps
         path: |
-          ./${{ inputs.desktop_package_name }}/build/compose/binaries/release/exe/*.exe
-          ./${{ inputs.desktop_package_name }}/build/compose/binaries/release/msi/*.msi
+          **/*.exe
+          **/*.msi
 
     # Upload Linux package
     - name: Upload Linux App
@@ -78,7 +78,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: Linux-App
-        path: './${{ inputs.desktop_package_name }}/build/compose/binaries/release/deb/*.deb'
+        path: '**/*.deb'
 
     # Upload MacOS package
     - name: Upload MacOS App
@@ -86,7 +86,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: MacOS-App
-        path: './${{ inputs.desktop_package_name }}/build/compose/binaries/release/dmg/*.dmg'
+        path: '**/*.dmg'
 
     - name: Publish Windows App
       if: matrix.os == 'windows-latest'
