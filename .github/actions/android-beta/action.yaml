@@ -65,6 +65,7 @@ runs:
     
     # Install Fastlane and plugins for Play Store deployment
     - name: Install Fastlane
+      shell: bash
       run: |
         gem install bundler:2.2.27
         bundle install --jobs 4 --retry 3
@@ -103,10 +104,11 @@ runs:
         # Inflate PlayStore credentials
         touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
         echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
-
     
+
     # Build Android App Bundle for Play Store
     - name: Build Release
+      shell: bash
       env:
         KEYSTORE_PASSWORD: ${{ inputs.keystore_password }}
         KEYSTORE_ALIAS: ${{ inputs.key_alias }}
@@ -115,19 +117,21 @@ runs:
         VERSION: ${{ steps.rel_number.outputs.version }}
       run: |
         ./gradlew :${{inputs.android_package_name}}:bundleRelease
-    
+
     # Save AAB files as artifacts
     - name: Archive Build
       uses: actions/upload-artifact@v4
       with:
         name: release-aabs
         path: ./**/*.aab
-    
+
     # Deploy to Play Store Internal testing track
     - name: Deploy to Playstore Internal
+      shell: bash
       run: bundle exec fastlane android deploy_internal
-    
+
     # Promote to beta if specified
     - name: Promote Internal to Beta
+      shell: bash
       if: inputs.release_type == 'beta'
       run: bundle exec fastlane android promote_to_beta
