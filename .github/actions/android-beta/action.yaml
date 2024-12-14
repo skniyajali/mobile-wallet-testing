@@ -92,19 +92,72 @@ runs:
         GOOGLE_SERVICES: ${{ inputs.google_services }}
         PLAYSTORE_CREDS: ${{ inputs.playstore_creds }}
       run: |
-        # Mock debug google-services.json
-        cp .github/mock-google-services.json ${{ inputs.android_package_name }}/google-services.json
+        # Enable verbose output and exit on first error
+        set -ex
         
-        # Inflate keystore
-        echo $KEYSTORE | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
+        # Debug: Print lengths of input secrets
+        echo "Keystore input length: ${#KEYSTORE}"
+        echo "Google Services input length: ${#GOOGLE_SERVICES}"
+        echo "PlayStore Credentials input length: ${#PLAYSTORE_CREDS}"
         
-        # Inflate google-services.json
-        echo $GOOGLE_SERVICES > ${{ inputs.android_package_name }}/google-services.json
+        # Keystore decoding with error handling
+        if [ -z "$KEYSTORE" ]; then
+          echo "ERROR: Keystore file is empty"
+          exit 1
+        fi
         
-        # Inflate PlayStore credentials
-        touch ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
-        echo $PLAYSTORE_CREDS > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
-    
+        echo "$KEYSTORE" | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Failed to decode keystore"
+          exit 1
+        fi
+        
+        # Verify keystore file was created
+        if [ ! -f "${{ inputs.android_package_name }}/release_keystore.keystore" ]; then
+          echo "ERROR: Keystore file was not created"
+          exit 1
+        fi
+        ls -l ${{ inputs.android_package_name }}/release_keystore.keystore
+        
+        # Google Services file handling
+        if [ -z "$GOOGLE_SERVICES" ]; then
+          echo "ERROR: Google Services JSON is empty"
+          exit 1
+        fi
+        
+        echo "$GOOGLE_SERVICES" > ${{ inputs.android_package_name }}/google-services.json
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Failed to create google-services.json"
+          exit 1
+        fi
+        
+        # Verify google-services.json
+        if [ ! -f "${{ inputs.android_package_name }}/google-services.json" ]; then
+          echo "ERROR: Google Services file was not created"
+          exit 1
+        fi
+        cat ${{ inputs.android_package_name }}/google-services.json
+        
+        # PlayStore Credentials handling
+        if [ -z "$PLAYSTORE_CREDS" ]; then
+          echo "ERROR: PlayStore credentials are empty"
+          exit 1
+        fi
+        
+        echo "$PLAYSTORE_CREDS" > ${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Failed to create PlayStore credentials file"
+          exit 1
+        fi
+        
+        # Verify credentials file
+        if [ ! -f "${{ inputs.android_package_name }}/playStorePublishServiceCredentialsFile.json" ]; then
+          echo "ERROR: PlayStore credentials file was not created"
+          exit 1
+        fi
+        
+        # Additional validation
+        echo "Secret inflation completed successfully"    
 
     # Build Android App Bundle for Play Store
     - name: Build Release

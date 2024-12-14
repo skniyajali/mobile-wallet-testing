@@ -16,4 +16,4 @@ jobs:
         uses: ./.github/actions/android-production
         with:
           android_package_name: 'mifospay-android'
-          playstore_creds: ${{ secrets.PLAYSTORE_CREDS }}
+          playstore_creds: ${{ secrets.PLAYSTORECREDS }}
