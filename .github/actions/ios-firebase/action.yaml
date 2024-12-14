@@ -112,8 +112,8 @@ runs:
         FIREBASE_CREDS: ${{ inputs.firebase_creds }}
       run: |
         # Inflate Firebase credentials
-        touch ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
-        echo $FIREBASE_CREDS > ${{ inputs.android_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+        touch ${{ inputs.ios_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+        echo $FIREBASE_CREDS > ${{ inputs.ios_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
 
     - name: Build iOS App
       shell: bash
