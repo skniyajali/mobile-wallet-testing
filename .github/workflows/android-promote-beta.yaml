@@ -1,0 +1,30 @@
+name: KMP Promote Android App to Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Type of release'
+        type: string
+        required: true
+
+jobs:
+  promote_android_app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Promote Android App
+        uses: android-promote-beta-action@v1
+        with:
+          release_type: ${{ inputs.release_type }}
+          android_package_name: 'mifospay-android'
+
+          keystore_file: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          keystore_password: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
+          key_alias: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
+          key_password: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
+
+          google_services: ${{ secrets.GOOGLESERVICES }}
+          playstore_creds: ${{ secrets.PLAYSTORECREDS }}
