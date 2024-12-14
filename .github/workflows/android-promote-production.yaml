@@ -14,3 +14,6 @@ jobs:
 
       - name: Promote Android App to Production
         uses: ./.github/actions/android-production
+        with:
+          android_package_name: 'mifospay-android'
+          playstore_creds: ${{ secrets.PLAYSTORE_CREDS }}
