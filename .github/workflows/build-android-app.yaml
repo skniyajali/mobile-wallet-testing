@@ -1,0 +1,16 @@
+name: KMP Build android app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Android App
+        uses: ./.github/actions/build-android-app
+        with:
+          android_package_name: 'mifospay-android'
