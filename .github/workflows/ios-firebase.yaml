@@ -1,0 +1,30 @@
+name: KMP iOS deploy to Firebase
+
+on:
+  workflow_dispatch:
+    inputs:
+      ios_package_name:
+        description: 'Name of the iOS project module'
+        required: true
+        default: 'mifospay-ios'
+
+
+permissions:
+  contents: write
+
+jobs:
+  deploy_ios_app:
+    name: Deploy iOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy iOS App to Firebase
+        uses: ./.github/actions/deploy-ios
+        with:
+          ios_package_name: ${{ inputs.ios_package_name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          firebase_token: ${{ secrets.FIREBASECREDS }}
+          target_branch: 'dev'
+

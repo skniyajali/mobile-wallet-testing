@@ -1,0 +1,22 @@
+name: KMP iOS Build and Archive
+
+on:
+  workflow_dispatch:
+    inputs:
+      ios_package_name:
+        description: 'Name of the iOS project module'
+        required: true
+        default: 'mifospay-ios'
+
+jobs:
+  build_ios_app:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build iOS App
+        uses: ./.github/actions/build-ios
+        with:
+          ios_package_name: ${{ inputs.ios_package_name }}
