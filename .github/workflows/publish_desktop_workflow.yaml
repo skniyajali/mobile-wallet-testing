@@ -1,0 +1,34 @@
+name: KMP Publish Desktop App
+
+on:
+  workflow_dispatch:
+    inputs:
+      desktop_package_name:
+        description: 'Name of the Android project module'
+        type: string
+        required: true
+        default: 'mifospay-desktop'
+
+jobs:
+  build_and_publish_desktop_app:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Build And Publish Desktop App
+        uses: ./.github/actions/publish-desktop-app
+        with:
+          desktop_package_name: ${{ inputs.desktop_package_name }}
+          windows_signing_key: 'testing'
+          windows_signing_password: 'testing'
+          windows_signing_certificate: 'testing'
+          macos_signing_key: 'testing'
+          macos_signing_password: 'testing'
+          macos_signing_certificate: 'testing'
+          linux_signing_key: 'testing'
+          linux_signing_password: 'testing'
+          linux_signing_certificate: 'testing'
