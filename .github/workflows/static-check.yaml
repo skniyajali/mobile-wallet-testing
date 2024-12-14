@@ -1,0 +1,14 @@
+name: Static Analysis Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  static_analysis_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Static Analysis Check
+        uses: ./.github/actions/static-analysis-check
