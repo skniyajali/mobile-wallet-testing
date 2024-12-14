@@ -1,0 +1,19 @@
+name: KMP build desktop app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_desktop:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Desktop App
+        uses: ./.github/actions/build-desktop-app
+        with:
+          desktop_package_name: 'mifospay-desktop'
