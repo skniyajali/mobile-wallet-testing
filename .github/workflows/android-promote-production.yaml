@@ -1,0 +1,16 @@
+name: KMP Promote Android App to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  promote_android_app:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Promote Android App to Production
+        uses: ./.github/actions/android-production

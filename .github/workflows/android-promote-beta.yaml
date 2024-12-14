@@ -8,14 +8,19 @@ on:
         type: string
         required: true
 
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
 jobs:
   promote_android_app:
     runs-on: macos-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Promote Android App
         uses: ./.github/actions/android-beta
