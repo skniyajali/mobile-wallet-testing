@@ -130,6 +130,3 @@ runs:
     - name: Upload iOS App to Firebase Distribution
       shell: bash
       run: bundle exec fastlane ios deploy_on_firebase
-
-    - name: Print `git status`
-      run: git status
