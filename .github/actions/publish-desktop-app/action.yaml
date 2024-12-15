@@ -75,8 +75,8 @@ runs:
         windows_inst=$(find . -path "**/*.msi" | grep -E "windows|win" | head -n 1)
         
         # Output Windows paths
-        echo "windows_exec=${windows_exec}" >> $GITHUB_ENV
-        echo "windows_inst=${windows_inst}" >> $GITHUB_ENV
+        echo "windows_exec=${windows_exec}" >> $GITHUB_OUTPUT
+        echo "windows_inst=${windows_inst}" >> $GITHUB_OUTPUT
 
     - name: Collect Linux Paths
       if: matrix.os == 'ubuntu-latest'
@@ -87,7 +87,7 @@ runs:
         linux_app=$(find . -path "**/*.deb" | head -n 1)
         
         # Output Linux paths
-        echo "linux_app=${linux_app}" >> $GITHUB_ENV
+        echo "linux_app=${linux_app}" >> $GITHUB_OUTPUT
 
     - name: Collect MacOS Paths
       if: matrix.os == 'macos-latest'
@@ -98,30 +98,32 @@ runs:
         macos_app=$(find . -path "**/*.dmg" | head -n 1)
         
         # Output MacOS paths
-        echo "macos_app=${macos_app}" >> $GITHUB_ENV
+        echo "macos_app=${macos_app}" >> $GITHUB_OUTPUT
 
-    # Upload Windows executables and installers
+    # Upload Windows executables
     - name: Upload Windows Apps
       if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: Windows-Apps
-        path: |
-          **/*.exe
-          **/*.msi
+        path: ${{ steps.collect-windows.outputs.windows_exec }}
+
+    # Upload Windows installers
+    - name: Upload Windows Apps
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ steps.collect-windows.outputs.windows_inst }}
 
     # Upload Linux package
     - name: Upload Linux App
       if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: Linux-App
-        path: '**/*.deb'
+        path: ${{ steps.collect-linux.outputs.linux_app }}
 
     # Upload MacOS package
     - name: Upload MacOS App
       if: matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: MacOS-App
-        path: '**/*.dmg'
+        path: ${{ steps.collect-macos.outputs.macos_app }}
