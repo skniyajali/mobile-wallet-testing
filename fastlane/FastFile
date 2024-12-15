@@ -60,24 +60,30 @@ platform :ios do
             output_directory: "mifospay-ios/",
             output_name: "mifospay-ios-app.ipa",
             skip_codesigning: "true",
-            skip_archive: "true"
         )
+    end
+
+    lane :increment_version do
+      latest_release = firebase_app_distribution_get_latest_release(
+        app: "1:728434912738:ios:86a7badfaed88b841a1dbb"
+      )
+      increment_build_number(
+        xcodeproj: "mifospay-ios/iosApp.xcodeproj",
+        build_number: latest_release[:buildVersion].to_i + 1
+      )
     end
 
     desc "Upload iOS application to Firebase App Distribution"
     lane :deploy_on_firebase do
         increment_build_number(
-          xcodeproj: "mifospay-ios/iosApp.xcodeproj",
-          scheme: "iosApp"
+          xcodeproj: "mifospay-ios/iosApp.xcodeproj"
         )
 
         build_ios_app(
             project: "mifospay-ios/iosApp.xcodeproj",
             scheme: "iosApp",
-            # Set configuration to debug for now
             configuration: "Debug",
             skip_codesigning: "true",
-            skip_archive: "true"
         )
         release = firebase_app_distribution(
             app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
