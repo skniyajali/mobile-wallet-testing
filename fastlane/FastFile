@@ -60,6 +60,7 @@ platform :ios do
             output_directory: "mifospay-ios/",
             output_name: "mifospay-ios-app.ipa",
             skip_codesigning: "true",
+            skip_archive: "true"
         )
     end
 
@@ -84,6 +85,7 @@ platform :ios do
             scheme: "iosApp",
             configuration: "Debug",
             skip_codesigning: "true",
+            skip_archive: "true"
         )
         release = firebase_app_distribution(
             app: "1:728434912738:ios:86a7badfaed88b841a1dbb",

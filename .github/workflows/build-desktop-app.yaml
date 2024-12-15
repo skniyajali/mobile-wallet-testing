@@ -12,8 +12,17 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build Desktop App
-        uses: ./.github/actions/build-desktop-app
+        uses: openMF/kmp-build-desktop-app-action@v1.0.0
+        id: build-desktop
         with:
           desktop_package_name: 'mifospay-desktop'
+
+      - name: Display Desktop App Paths
+        run: |
+          echo "Windows App: ${{ steps.build-desktop.outputs.windows_app }}"
+          echo "Linux App: ${{ steps.build-desktop.outputs.linux_app }}"
+          echo "MacOS App: ${{ steps.build-desktop.outputs.macos_app }}"
