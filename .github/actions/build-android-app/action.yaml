@@ -118,10 +118,10 @@ runs:
       shell: bash
       run: |
         # Find Demo APK
-        demo_apk=$(find . -path "**/build/outputs/apk/demo/debug/*.apk" -print -quit)
+        demo_apk=$(find . -path "**/build/outputs/apk/demo/**/*.apk" -print -quit)
 
         # Find Prod APK
-        prod_apk=$(find . -path "**/build/outputs/apk/prod/release/*.apk" -print -quit)
+        prod_apk=$(find . -path "**/build/outputs/apk/prod/**/*.apk" -print -quit)
 
         # Output APK paths
         echo "demo_apk=${demo_apk}" >> $GITHUB_OUTPUT

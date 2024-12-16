@@ -20,10 +20,3 @@ jobs:
         id: build-desktop
         with:
           desktop_package_name: 'mifospay-desktop'
-
-      - name: Display Desktop App Paths
-        run: |
-          echo "Windows Exec: ${{ steps.build-desktop.outputs.windows_exec }}"
-          echo "Windows Installer: ${{ steps.build-desktop.outputs.windows_inst }}"
-          echo "Linux App: ${{ steps.build-desktop.outputs.linux_app }}"
-          echo "MacOS App: ${{ steps.build-desktop.outputs.macos_app }}"
