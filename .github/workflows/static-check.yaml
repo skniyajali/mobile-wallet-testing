@@ -1,4 +1,4 @@
-name: Static Analysis Check
+name: KMP Static Analysis Check
 
 on:
   workflow_dispatch:

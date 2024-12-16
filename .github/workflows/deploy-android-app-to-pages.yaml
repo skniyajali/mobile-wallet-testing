@@ -1,4 +1,4 @@
-name: Publish Web App
+name: KMP Publish Web App
 
 on:
   workflow_dispatch:

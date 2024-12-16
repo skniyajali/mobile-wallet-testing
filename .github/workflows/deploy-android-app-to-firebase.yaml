@@ -1,4 +1,4 @@
-name: Publish Android App on Firebase
+name: KMP Publish Android App on Firebase
 on:
   workflow_dispatch:
 
