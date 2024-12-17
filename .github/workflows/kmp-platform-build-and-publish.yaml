@@ -13,40 +13,10 @@ on:
         default: 'dev'
         description: 'Target branch for release'
 
-      android_package_name:
-        description: 'Name of the Android project module'
-        type: string
-        required: true
-        default: 'mifospay-android'
-
-      ios_package_name:
-        description: 'Name of the iOS project module'
-        type: string
-        required: true
-        default: 'mifospay-ios'
-
-      desktop_package_name:
-        description: 'Name of the Desktop project module'
-        type: string
-        required: true
-        default: 'mifospay-desktop'
-
-      web_package_name:
-        description: 'Name of the Web project module'
-        type: string
-        required: true
-        default: 'mifospay-web'
-
       publish_android:
         type: boolean
         default: false
         description: Publish Android App On Play Store
-
-      #  A boolean input to control the iOS build process, defaulting to false.
-      build_ios:
-        type: boolean
-        default: false
-        description: Build iOS App
 
       # Toggle for iOS App Store publishing
       publish_ios:
@@ -89,7 +59,7 @@ jobs:
       - name: Build Android App
         uses: openMF/kmp-build-android-app-action@v1.0.0
         with:
-          android_package_name: ${{ inputs.android_package_name }}
+          android_package_name: mifospay-android
           build_type: 'Release'
           google_services: ${{ secrets.GOOGLESERVICES }}
           key_store: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
@@ -111,7 +81,7 @@ jobs:
       - name: Publish Android App on Firebase
         uses: openMF/kmp-android-firebase-publish-action@v1.0.0
         with:
-          android_package_name: ${{ inputs.android_package_name }}
+          android_package_name: mifospay-android
           keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
           keystore_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
           key_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
@@ -137,7 +107,7 @@ jobs:
         uses: openMF/kmp-publish-android-on-playstore-beta-action@v1.0.0
         with:
           release_type: ${{ inputs.release_type }}
-          android_package_name: ${{ inputs.android_package_name }}
+          android_package_name: mifospay-android
           google_services: ${{ secrets.GOOGLESERVICES }}
           playstore_creds: ${{ secrets.PLAYSTORECREDS }}
           keystore_file: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
@@ -154,7 +124,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build iOS App
-        if: inputs.build_ios
         uses: openMF/kmp-build-ios-app-action@v1.0.0
 
   # Firebase Distribution Job for iOS
@@ -171,7 +140,7 @@ jobs:
       - name: Deploy iOS App to Firebase
         uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
         with:
-          ios_package_name: ${{ inputs.ios_package_name }}
+          ios_package_name: mifospay-ios
           github_token: ${{ secrets.GITHUB_TOKEN }}
           firebase_creds: ${{ secrets.FIREBASECREDS }}
           target_branch: ${{ inputs.target_branch }}
@@ -204,7 +173,7 @@ jobs:
       - name: Build Desktop App
         uses: openMF/kmp-build-desktop-app-action@v1.0.0
         with:
-          desktop_package_name: ${{ inputs.desktop_package_name }}
+          desktop_package_name: mifospay-desktop
           build_type: 'Release'
 
   # Desktop Publishing Job
@@ -219,7 +188,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: openMF/kmp-publish-desktop-app-action@v1.0.0
         with:
-          desktop_package_name: ${{ inputs.desktop_package_name }}
+          desktop_package_name: mifospay-desktop
           windows_signing_key: ${{ secrets.WINDOWS_SIGNING_KEY }}
           windows_signing_password: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
           windows_signing_certificate: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE }}
@@ -241,7 +210,7 @@ jobs:
       - name: Build Web App
         uses: openMF/kmp-build-web-app-action@v1.0.0
         with:
-          web_package_name: ${{ inputs.web_package_name }}
+          web_package_name: mifospay-web
 
   # Web Publishing Job
   publish_web:
@@ -262,7 +231,7 @@ jobs:
         uses: openMF/kmp-web-publish-action@v1.0.0
         id: deployment
         with:
-          web_package_name: ${{ inputs.web_package_name }}
+          web_package_name: mifospay-web
 
   # Creates GitHub release with all built artifacts
   github_release:
@@ -342,7 +311,7 @@ jobs:
         shell: pwsh
         # Executes the Compress-Archive command to create the ZIP archive.
         run: |
-          Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/${{ inputs.web_package_name }}.zip'
+          Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/mifospay-web.zip'
 
       # Create GitHub pre-release with all artifacts
       - name: Create Github Pre-Release
@@ -353,10 +322,10 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
-            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
-            ./all-artifacts/desktop-app-macos-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
-            ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
-            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
-            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
-            ./all-artifacts/${{ inputs.web_package_name }}.zip
+            ./all-artifacts/android-app/mifospay-android/build/outputs/apk/demo/release/*.apk
+            ./all-artifacts/android-app/mifospay-android/build/outputs/apk/prod/release/*.apk
+            ./all-artifacts/desktop-app-macos-latest/mifospay-desktop/build/compose/binaries/main-release/dmg/*.dmg
+            ./all-artifacts/desktop-app-ubuntu-latest/mifospay-desktop/build/compose/binaries/main-release/deb/*.deb
+            ./all-artifacts/desktop-app-windows-latest/mifospay-desktop/build/compose/binaries/main-release/exe/*.exe
+            ./all-artifacts/desktop-app-windows-latest/mifospay-desktop/build/compose/binaries/main-release/msi/*.msi            
+            ./all-artifacts/mifospay-web.zip
