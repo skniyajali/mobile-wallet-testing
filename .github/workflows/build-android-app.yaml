@@ -34,8 +34,3 @@ jobs:
           key_store_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
           key_store_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
           key_store_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
-
-      - name: Display APK Paths
-        run: |
-          echo "Demo APK: ${{ steps.build-android.outputs.demo_apk }}"
-          echo "Prod APK: ${{ steps.build-android.outputs.prod_apk }}"
