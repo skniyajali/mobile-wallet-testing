@@ -1,0 +1,362 @@
+name: KMP Multi-Platform App Build and Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        type: string
+        default: 'internal'
+        description: Release Type
+
+      target_branch:
+        type: string
+        default: 'dev'
+        description: 'Target branch for release'
+
+      android_package_name:
+        description: 'Name of the Android project module'
+        type: string
+        required: true
+        default: 'mifospay-android'
+
+      ios_package_name:
+        description: 'Name of the iOS project module'
+        type: string
+        required: true
+        default: 'mifospay-ios'
+
+      desktop_package_name:
+        description: 'Name of the Desktop project module'
+        type: string
+        required: true
+        default: 'mifospay-desktop'
+
+      web_package_name:
+        description: 'Name of the Web project module'
+        type: string
+        required: true
+        default: 'mifospay-web'
+
+      publish_android:
+        type: boolean
+        default: false
+        description: Publish Android App On Play Store
+
+      #  A boolean input to control the iOS build process, defaulting to false.
+      build_ios:
+        type: boolean
+        default: false
+        description: Build iOS App
+
+      # Toggle for iOS App Store publishing
+      publish_ios:
+        type: boolean
+        default: false
+        description: Publish iOS App On App Store
+
+      # Toggle for Desktop app publishing (Windows/macOS/Linux)
+      publish_desktop:
+        type: boolean
+        default: false
+        description: Publish Desktop Apps On App Store
+
+      # Toggle for Web app deployment
+      publish_web:
+        type: boolean
+        default: true
+        description: Publish Web App
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build and publish web app
+  build_android:
+    name: Build Android Application
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Android App
+        uses: openMF/kmp-build-android-app-action@v1.0.0
+        with:
+          android_package_name: ${{ inputs.android_package_name }}
+          build_type: 'Release'
+          google_services: ${{ secrets.GOOGLESERVICES }}
+          key_store: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          key_store_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          key_store_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          key_store_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+
+  # Publish Android app on Firebase App Distribution
+  publish_android_on_firebase:
+    name: Deploy Android App On Firebase
+    runs-on: macos-latest
+    steps:
+      # Check out caller repository
+      - name: Checkout Caller Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish Android App on Firebase
+        uses: openMF/kmp-android-firebase-publish-action@v1.0.0
+        with:
+          android_package_name: ${{ inputs.android_package_name }}
+          keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          keystore_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          key_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          key_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          google_services: ${{ secrets.GOOGLESERVICES }}
+          firebase_creds: ${{ secrets.FIREBASECREDS }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          target_branch: ${{ inputs.target_branch }}
+
+  # Publish Android app on Play Store
+  publish_android_on_playstore:
+    name: Publish Android App On Play Store
+    if: inputs.publish_android
+    runs-on: macos-latest
+    steps:
+      # Check out caller repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Promote Android App to Beta or Internal
+        uses: openMF/kmp-publish-android-on-playstore-beta-action@v1.0.0
+        with:
+          release_type: ${{ inputs.release_type }}
+          android_package_name: ${{ inputs.android_package_name }}
+          google_services: ${{ secrets.GOOGLESERVICES }}
+          playstore_creds: ${{ secrets.PLAYSTORECREDS }}
+          keystore_file: ${{ secrets.UPLOAD_KEYSTORE_FILE }}
+          keystore_password: ${{ secrets.UPLOAD_KEYSTORE_FILE_PASSWORD }}
+          key_alias: ${{ secrets.UPLOAD_KEYSTORE_ALIAS }}
+          key_password: ${{ secrets.UPLOAD_KEYSTORE_ALIAS_PASSWORD }}
+
+  # iOS Build Job
+  build_ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build iOS App
+        if: inputs.build_ios
+        uses: openMF/kmp-build-ios-app-action@v1.0.0
+
+  # Firebase Distribution Job for iOS
+  publish_ios_app_to_firebase:
+    name: Publish iOS App On Firebase
+    if: inputs.publish_ios
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy iOS App to Firebase
+        uses: openMF/kmp-publish-ios-on-firebase-action@v1.0.0
+        with:
+          ios_package_name: ${{ inputs.ios_package_name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          firebase_creds: ${{ secrets.FIREBASECREDS }}
+          target_branch: ${{ inputs.target_branch }}
+
+  # App Store Publishing Job
+  publish_ios_app_to_app_center:
+    name: Publish iOS App On App Center
+    if: inputs.publish_ios
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Git Status
+        run: git status
+
+      # TODO: Implement App Store publishing
+
+  # Desktop Build Job
+  build_desktop:
+    name: Build Desktop App
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Desktop App
+        uses: openMF/kmp-build-desktop-app-action@v1.0.0
+        with:
+          desktop_package_name: ${{ inputs.desktop_package_name }}
+          build_type: 'Release'
+
+  # Desktop Publishing Job
+  publish_desktop:
+    name: Publish Desktop App
+    if: inputs.publish_desktop
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: openMF/kmp-publish-desktop-app-action@v1.0.0
+        with:
+          desktop_package_name: ${{ inputs.desktop_package_name }}
+          windows_signing_key: ${{ secrets.WINDOWS_SIGNING_KEY }}
+          windows_signing_password: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
+          windows_signing_certificate: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE }}
+          macos_signing_key: ${{ secrets.MACOS_SIGNING_KEY }}
+          macos_signing_password: ${{ secrets.MACOS_SIGNING_PASSWORD }}
+          macos_signing_certificate: ${{ secrets.MACOS_SIGNING_CERTIFICATE }}
+          linux_signing_key: ${{ secrets.LINUX_SIGNING_KEY }}
+          linux_signing_password: ${{ secrets.LINUX_SIGNING_PASSWORD }}
+          linux_signing_certificate: ${{ secrets.LINUX_SIGNING_CERTIFICATE }}
+
+  # Web Build Job
+  build_web:
+    name: Build Web Application
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Web App
+        uses: openMF/kmp-build-web-app-action@v1.0.0
+        with:
+          web_package_name: ${{ inputs.web_package_name }}
+
+  # Web Publishing Job
+  publish_web:
+    name: Publish Web App
+    if: inputs.publish_web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      id-token: write
+      pages: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Publish KMP Web App To GitHub Pages
+        uses: openMF/kmp-web-publish-action@v1.0.0
+        id: deployment
+        with:
+          web_package_name: ${{ inputs.web_package_name }}
+
+  # Creates GitHub release with all built artifacts
+  github_release:
+    name: Create Github Release
+    needs: [ build_android, build_desktop, build_web, build_ios ]
+    if: inputs.release_type == 'beta'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Generate version number
+      - name: Generate Release Number
+        id: rel_number
+        shell: bash
+        run: |
+          ./gradlew versionFile
+          COMMITS=`git rev-list --count HEAD`
+          TAGS=`git tag | grep -v beta | wc -l`
+          VC=$(((COMMITS+TAGS) << 1))
+          echo "version-code=$VC" >> $GITHUB_OUTPUT
+          VERSION=`cat version.txt`
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes
+        uses: actions/github-script@v7
+        id: release-notes
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              // Get latest release tag
+              const latestRelease = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              const previousTag = latestRelease.data.tag_name;
+
+              // Generate release notes
+              const params = {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: '${{ steps.rel_number.outputs.version }}',
+                target_commitish: '${{ inputs.target_branch }}'
+              };
+
+              const { data } = await github.rest.repos.generateReleaseNotes(params);
+              const changelog = data.body.replaceAll('`', '\'').replaceAll('"', '\'');
+
+              // Write changelog files
+              const fs = require('fs');
+              fs.writeFileSync('changelogGithub', changelog);
+
+              // Generate beta changelog
+              const { execSync } = require('child_process');
+              execSync('git log --format="* %s" HEAD^..HEAD > changelogBeta');
+
+              return changelog;
+            } catch (error) {
+              console.error('Error generating release notes:', error);
+              return '';
+            }
+
+      # Get all build artifacts
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+
+      # Debug: Show downloaded files
+      - name: Display structure of downloaded files
+        run: ls -R ./all-artifacts
+
+      #Creates a ZIP archive of the web app build using PowerShell.
+      - name: Archive Web Build
+        shell: pwsh
+        # Executes the Compress-Archive command to create the ZIP archive.
+        run: |
+          Compress-Archive -Path './all-artifacts/web-app/*' -DestinationPath './all-artifacts/${{ inputs.web_package_name }}.zip'
+
+      # Create GitHub pre-release with all artifacts
+      - name: Create Github Pre-Release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          tag_name: ${{ steps.rel_number.outputs.version }}
+          body_path: ./changelogGithub
+          draft: false
+          prerelease: true
+          files: |
+            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/demo/release/*.apk
+            ./all-artifacts/android-app/${{ inputs.android_package_name }}/build/outputs/apk/prod/release/*.apk
+            ./all-artifacts/desktop-app-macos-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/dmg/*.dmg
+            ./all-artifacts/desktop-app-ubuntu-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/deb/*.deb
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/exe/*.exe
+            ./all-artifacts/desktop-app-windows-latest/${{ inputs.desktop_package_name }}/build/compose/binaries/main-release/msi/*.msi            
+            ./all-artifacts/${{ inputs.web_package_name }}.zip
