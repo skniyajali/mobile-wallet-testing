@@ -127,3 +127,12 @@ jobs:
       publish_ios: ${{ inputs.publish_ios }}
       publish_desktop: ${{ inputs.publish_desktop }}
       publish_web: ${{ inputs.publish_web }}
+      keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+      keystore_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+      keystore_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+      keystore_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      google_services: ${{ secrets.GOOGLESERVICES }}
+      firebase_creds: ${{ secrets.FIREBASECREDS }}
+      playstore_creds: ${{ secrets.PLAYSTORECREDS }}
+
