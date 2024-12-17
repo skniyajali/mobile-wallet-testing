@@ -156,5 +156,5 @@ jobs:
       google_services: ${{ secrets.GOOGLESERVICES }}
       firebase_creds: ${{ secrets.FIREBASECREDS }}
       playstore_creds: ${{ secrets.PLAYSTORECREDS }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
