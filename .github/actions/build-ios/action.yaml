@@ -25,16 +25,6 @@ runs:
       shell: bash
       run: bundle exec fastlane ios build_ios
 
-    - name: List MifosPay iOS Files and Subdirectories
-      shell: bash
-      run: find mifospay-ios -type d -exec ls -la {} \;
-
-    - name: Install tree and List Directory
-      shell: bash
-      run: |
-        apt-get install tree -y
-        tree mifospay-ios -a
-
     - name: Upload iOS Artifact
       uses: actions/upload-artifact@v4
       with:

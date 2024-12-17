@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build Desktop App
-        uses: ./.github/actions/build-desktop-app
+        uses: openMF/kmp-publish-desktop-app-action@v1.0.0
         id: build-desktop
         with:
           desktop_package_name: 'mifospay-desktop'
