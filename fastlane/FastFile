@@ -44,8 +44,8 @@ platform :android do
 
   desc "Publish Release Play Store artifacts to Firebase App Distribution"
   lane :deploy_on_firebase do |options|
-    options[:apkFile] || = "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk"
-    options[:serviceCredsFile] || = "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    options[:apkFile] ||= "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk"
+    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
 
     # Generate Release Note
     releaseNotes = misc.generateReleaseNotes(
@@ -65,7 +65,7 @@ platform :android do
 
   desc "Deploy internal tracks to Google Play"
   lane :deploy_internal do |options|
-    options[:aabFile] || = "mifospay-android/build/outputs/bundle/prod/release/mifospay-android-prod-release.aab"
+    options[:aabFile] ||= "mifospay-android/build/outputs/bundle/prod/release/mifospay-android-prod-release.aab"
     upload_to_play_store(
       track: 'internal',
       aab: options[:aabFile],
@@ -99,7 +99,7 @@ platform :android do
 
   desc "Generate artifacts for the given [build] signed with the provided [keystore] and credentials."
   private_lane :buildAndSignApp do |options|
-    options[:storeFile] || = "secrets/release_keystore.keystore"
+    options[:storeFile] ||= "secrets/release_keystore.keystore"
 
     gradle(
       task: options[:taskName],
@@ -121,7 +121,7 @@ platform :ios do
   desc "Build iOS application"
   lane :build_ios do |options|
     # Set default configuration if not provided
-    options[:configuration] || = "Debug"
+    options[:configuration] ||= "Debug"
 
     # automatic code signing
     update_code_signing_settings(
@@ -150,7 +150,7 @@ platform :ios do
 
   desc "Upload iOS application to Firebase App Distribution"
   lane :deploy_on_firebase do |options|
-    options[:serviceCredsFile] || = "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
 
     releaseNotes = misc.generateReleaseNotes(
       repoName: "mobile-wallet-testing",
