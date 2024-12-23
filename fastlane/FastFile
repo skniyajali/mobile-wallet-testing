@@ -20,10 +20,10 @@ platform :android do
     buildAndSignApp(
       taskName: "assemble",
       buildType: "Release",
-      storeFile : options[:storeFile],
-      storePassword : options[:storePassword],
-      keyAlias : options[:keyAlias],
-      keyPassword : options[:keyPassword],
+      storeFile: options[:storeFile],
+      storePassword: options[:storePassword],
+      keyAlias: options[:keyAlias],
+      keyPassword: options[:keyPassword],
     )
   end
 
@@ -35,10 +35,10 @@ platform :android do
     buildAndSignApp(
       taskName: "bundle",
       buildType: "Release",
-      storeFile : options[:storeFile],
-      storePassword : options[:storePassword],
-      keyAlias : options[:keyAlias],
-      keyPassword : options[:keyPassword],
+      storeFile: options[:storeFile],
+      storePassword: options[:storePassword],
+      keyAlias: options[:keyAlias],
+      keyPassword: options[:keyPassword],
     )
   end
 
