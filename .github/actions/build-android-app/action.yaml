@@ -37,14 +37,20 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Set up Java development environment
-      uses: actions/setup-java@v4
+    # Setup Ruby for Fastlane automation
+    - name: Configure Ruby
+      uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
       with:
-        distribution: 'zulu'  # Use Zulu distribution of OpenJDK
-        java-version: '17'     # Use Java 17 version
+        bundler-cache: true
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+    # Install Fastlane and required plugins for deployment automation
+    - name: Install Fastlane
+      shell: bash
+      run: |
+        gem install bundler:2.2.27
+        bundle install --jobs 4 --retry 3
+        bundle exec fastlane add_plugin firebase_app_distribution
+        bundle exec fastlane add_plugin increment_build_number
 
     # Cache Gradle dependencies and build outputs to speed up future builds
     - name: Cache Gradle and build outputs
@@ -57,19 +63,6 @@ runs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: ${{ runner.os }}-gradle-
 
-    # Generate version number
-    - name: Generate Release Number
-      id: rel_number
-      shell: bash
-      run: |
-        ./gradlew versionFile
-        COMMITS=`git rev-list --count HEAD`
-        TAGS=`git tag | grep -v beta | wc -l`
-        VC=$(((COMMITS+TAGS) << 1))
-        echo "version-code=$VC" >> $GITHUB_OUTPUT
-        VERSION=`cat version.txt`
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-
     - name: Inflate Secrets
       if: ${{ inputs.build_type == 'Release' }}
       shell: bash
@@ -77,11 +70,10 @@ runs:
         KEYSTORE: ${{ inputs.key_store }}
         GOOGLE_SERVICES: ${{ inputs.google_services }}
       run: |
-        # Mock debug google-services.json
-        cp .github/mock-google-services.json ${{ inputs.android_package_name }}/google-services.json
-
+        mkdir -p ${{ github.workspace }}/secrets
+        
         # Inflate keystore
-        echo $KEYSTORE | base64 --decode > ${{ inputs.android_package_name }}/release_keystore.keystore
+        echo $KEYSTORE | base64 --decode > ${{ github.workspace }}/secrets/release_keystore.keystore
 
         # Inflate google-services.json
         echo $GOOGLE_SERVICES | base64 --decode > ${{ inputs.android_package_name }}/google-services.json
@@ -90,21 +82,22 @@ runs:
     - name: Build Debug Android App
       if: ${{ inputs.build_type == 'Debug' }}
       shell: bash
-      env:
-        VERSION_CODE: ${{ steps.rel_number.outputs.version-code }}
-        VERSION: ${{ steps.rel_number.outputs.version }}
-      run: ./gradlew :${{ inputs.android_package_name }}:assembleDebug
+      run: bundle exec fastlane android assembleDebugApks
 
     - name: Build Release Android App
       if: ${{ inputs.build_type == 'Release' }}
       shell: bash
       env:
+        KEYSTORE: ${{ github.workspace }}/secrets/release_keystore.keystore
         KEYSTORE_PASSWORD: ${{ inputs.key_store_password }}
         KEYSTORE_ALIAS: ${{ inputs.key_store_alias }}
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
-        VERSION_CODE: ${{ steps.rel_number.outputs.version-code }}
-        VERSION: ${{ steps.rel_number.outputs.version }}
-      run: ./gradlew :${{ inputs.android_package_name }}:assembleRelease
+      run: |
+        bundle exec fastlane android assembleReleaseApks \
+        storeFile: ${{ env.KEYSTORE }} \
+        storePassword: ${{ env.KEYSTORE_PASSWORD }} \
+        keyAlias: ${{ env.KEYSTORE_ALIAS }} \
+        keyPassword: ${{ env.KEYSTORE_ALIAS_PASSWORD }}
 
     - name: Upload APK as artifact
       uses: actions/upload-artifact@v4

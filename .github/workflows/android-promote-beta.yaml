@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Promote Android App
-        uses: openMF/kmp-publish-android-on-playstore-beta-action@v1.0.0
+        uses:  ./.github/actions/android-beta
         with:
           release_type: ${{ inputs.release_type }}
           android_package_name: 'mifospay-android'

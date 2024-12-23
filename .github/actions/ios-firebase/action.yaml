@@ -111,9 +111,15 @@ runs:
       env:
         FIREBASE_CREDS: ${{ inputs.firebase_creds }}
       run: |
+        mkdir -p ${{ github.workspace }}/secrets
+        
         # Inflate Firebase credentials
-        touch ${{ inputs.ios_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
-        echo $FIREBASE_CREDS > ${{ inputs.ios_package_name }}/firebaseAppDistributionServiceCredentialsFile.json
+        touch ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json
+        echo $FIREBASE_CREDS > ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json
+
+    - name: Increment Build Number
+      shell: bash
+      run: bundle exec fastlane ios increment_version
 
     - name: Build iOS App
       shell: bash

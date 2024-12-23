@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Promote Android App to Production
-        uses: openMF/kmp-publish-android-on-playstore-production-action@v1.0.0
+        uses: ./.github/actions/android-production
         with:
           android_package_name: 'mifospay-android'
           playstore_creds: ${{ secrets.PLAYSTORECREDS }}

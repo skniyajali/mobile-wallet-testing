@@ -1,11 +1,74 @@
 default_platform(:android)
 
 platform :android do
+  before_all do
+    ENV["SECRETS"] = ENV["PWD"] + "/keystores/"
+  end
+
+  desc "Assemble debug APKs."
+  lane :assembleDebugApks do |options|
+    gradle(
+      tasks: ["assembleDebug"],
+    )
+  end
+
+  desc "Assemble Play Store release APK"
+  lane :assembleReleaseApk do |options|
+    # Generate version
+    generateVersion = misc.generateVersion()
+
+    buildAndSignApp(
+      taskName: "assemble",
+      buildType: "Release",
+      storeFile : options[:storeFile],
+      storePassword : options[:storePassword],
+      keyAlias : options[:keyAlias],
+      keyPassword : options[:keyPassword],
+    )
+  end
+
+  desc "Bundle Play Store release"
+  lane :bundlePlayStoreRelease do |options|
+    # Generate version
+    generateVersion = misc.generateVersion()
+
+    buildAndSignApp(
+      taskName: "bundle",
+      buildType: "Release",
+      storeFile : options[:storeFile],
+      storePassword : options[:storePassword],
+      keyAlias : options[:keyAlias],
+      keyPassword : options[:keyPassword],
+    )
+  end
+
+  desc "Publish Release Play Store artifacts to Firebase App Distribution"
+  lane :deploy_on_firebase do |options|
+    options[:apkFile] || = "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk"
+    options[:serviceCredsFile] || = "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+
+    # Generate Release Note
+    releaseNotes = misc.generateReleaseNotes(
+      repoName: "mobile-wallet-testing",
+      actionUrl: "#{options[:actionUrl]}"
+    )
+
+    firebase_app_distribution(
+      app: "1:64530857057:android:f8d67b786db1b844",
+      android_artifact_type: "APK",
+      android_artifact_path: options[:apkFile],
+      service_credentials_file: options[:serviceCredsFile],
+      groups: "mifos-wallet-testers",
+      release_notes: "#{releaseNotes}",
+    )
+  end
+
   desc "Deploy internal tracks to Google Play"
-  lane :deploy_internal do
-    supply(
+  lane :deploy_internal do |options|
+    options[:aabFile] || = "mifospay-android/build/outputs/bundle/prod/release/mifospay-android-prod-release.aab"
+    upload_to_play_store(
       track: 'internal',
-      aab: 'mifospay-android/build/outputs/bundle/prodRelease/mifospay-android-prod-release.aab',
+      aab: options[:aabFile],
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
@@ -14,7 +77,7 @@ platform :android do
 
   desc "Promote internal tracks to beta on Google Play"
   lane :promote_to_beta do
-    supply(
+    upload_to_play_store(
       track: 'internal',
       track_promote_to: 'beta',
       skip_upload_changelogs: true,
@@ -26,7 +89,7 @@ platform :android do
 
   desc "Promote beta tracks to production on Google Play"
   lane :promote_to_production do
-    supply(
+    upload_to_play_store(
       track: 'beta',
       track_promote_to: 'production',
       skip_upload_changelogs: true,
@@ -34,65 +97,148 @@ platform :android do
     )
   end
 
-  desc "Upload Android application to Firebase App Distribution"
-  lane :deploy_on_firebase do
-    release = firebase_app_distribution(
-        app: "1:728434912738:android:0490c291986f0a691a1dbb",
-        service_credentials_file: "mifospay-android/firebaseAppDistributionServiceCredentialsFile.json",
-        release_notes_file: "mifospay-android/build/outputs/changelogBeta",
-        android_artifact_type: "APK",
-        android_artifact_path: "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk",
-        groups: "mifos-wallet-testers"
+  desc "Generate artifacts for the given [build] signed with the provided [keystore] and credentials."
+  private_lane :buildAndSignApp do |options|
+    options[:storeFile] || = "secrets/release_keystore.keystore"
+
+    gradle(
+      task: options[:taskName],
+      flavor: options[:flavor],
+      build_type: options[:buildType],
+      properties: {
+        "android.injected.signing.store.file" => options[:storeFile],
+        "android.injected.signing.store.password" => options[:storePassword],
+        "android.injected.signing.key.alias" => options[:keyAlias],
+        "android.injected.signing.key.password" => options[:keyPassword],
+      },
+      print_command: false,
     )
   end
 
 end
 
-
 platform :ios do
-    desc "Build iOS application"
-    lane :build_ios do
-        build_ios_app(
-            project: "mifospay-ios/iosApp.xcodeproj",
-            scheme: "iosApp",
-            # Set configuration to debug for now
-            configuration: "Debug",
-            output_directory: "mifospay-ios/",
-            output_name: "mifospay-ios-app.ipa",
-            skip_codesigning: "true",
-            skip_archive: "true"
-        )
+  desc "Build iOS application"
+  lane :build_ios do |options|
+    # Set default configuration if not provided
+    options[:configuration] || = "Debug"
+
+    # automatic code signing
+    update_code_signing_settings(
+      use_automatic_signing: true,
+      path: "mifospay-ios/iosApp.xcodeproj"
+    )
+    enable_automatic_code_signing(path: "mifospay-ios/iosApp.xcodeproj")
+
+    build_ios_app(
+      project: "mifospay-ios/iosApp.xcodeproj",
+      scheme: "iosApp",
+      # Set configuration to debug for now
+      configuration: options[:configuration],
+    )
+  end
+
+  lane :increment_version do
+    latest_release = firebase_app_distribution_get_latest_release(
+      app: "1:728434912738:ios:86a7badfaed88b841a1dbb"
+    )
+    increment_build_number(
+      xcodeproj: "mifospay-ios/iosApp.xcodeproj",
+      build_number: latest_release[:buildVersion].to_i + 1
+    )
+  end
+
+  desc "Upload iOS application to Firebase App Distribution"
+  lane :deploy_on_firebase do |options|
+    options[:serviceCredsFile] || = "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+
+    releaseNotes = misc.generateReleaseNotes(
+      repoName: "mobile-wallet-testing",
+      actionUrl: "#{options[:actionUrl]}"
+    )
+    release = firebase_app_distribution(
+      app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
+      service_credentials_file: options[:serviceCredsFile],
+      release_notes_file: "#{releaseNotes}",
+      groups: "mifos-wallet-testers"
+    )
+
+  end
+end
+
+platform :misc do
+  desc "Apply build version information"
+  fastlane_require "time"
+  lane :setBuildVersionInfo do |options|
+    # Read-in app build config file.
+    buildConfigPath = "../#{options[:packageName]}/build.gradle.kts"
+    buildConfigFile = File.open(buildConfigPath)
+    buildConfigText = buildConfigFile.read
+    buildConfigFile.close
+
+    currentVersionCode = buildConfigText.match(/versionCode = (\d+)/).captures[0]
+    currentVersionName = buildConfigText.match(/versionName = "(.+)"/).captures[0]
+
+    if options[:versionName].nil? or options[:versionName].to_s.empty?
+      puts "Fetching latest tags from origin..."
+      `git fetch --prune --no-recurse-submodules --filter=tree:0 --depth=1 --tags origin`
+      puts "Getting latest version name from previous git tag..."
+      latestTag = `git describe --tags $(git rev-list --tags --max-count=1)`.chomp()
+      puts "Using tag #{latestTag} to calculate version name..."
+      latestTag.slice!(0)
+      puts "Current version name resolved to #{latestTag}."
+
+      versionParts = latestTag.split(".")
+      currentMajor = versionParts[0]
+      currentMinor = versionParts[1]
+      currentRevision = versionParts[2]
+
+      currentDate = Time.new
+      major = currentDate.year.to_s
+      minor = currentDate.strftime "%-m"
+
+      revision = 0
+      if currentMajor == major and currentMinor == minor
+        revision = currentRevision.to_i + 1
+      end
+      nextVersionName = "#{major}.#{minor}.#{revision}"
+    else
+      nextVersionName = options[:versionName].to_s
     end
 
-    lane :increment_version do
-      latest_release = firebase_app_distribution_get_latest_release(
-        app: "1:728434912738:ios:86a7badfaed88b841a1dbb"
-      )
-      increment_build_number(
-        xcodeproj: "mifospay-ios/iosApp.xcodeproj",
-        build_number: latest_release[:buildVersion].to_i + 1
-      )
-    end
+    # Replace version information.
+    puts "Setting version code to #{options[:versionCode]}."
+    buildConfigText.gsub!("versionCode = #{currentVersionCode}", "versionCode = #{options[:versionCode]}")
+    puts "Setting version name to #{nextVersionName}."
+    buildConfigText.gsub!("versionName = \"#{currentVersionName}\"", "versionName = \"#{nextVersionName}\"")
 
-    desc "Upload iOS application to Firebase App Distribution"
-    lane :deploy_on_firebase do
-        increment_build_number(
-          xcodeproj: "mifospay-ios/iosApp.xcodeproj"
-        )
+    # Save changes
+    File.open(buildConfigPath, "w") { |buildConfigFile| buildConfigFile << buildConfigText }
+  end
 
-        build_ios_app(
-            project: "mifospay-ios/iosApp.xcodeproj",
-            scheme: "iosApp",
-            configuration: "Debug",
-            skip_codesigning: "true",
-            skip_archive: "true"
-        )
-        release = firebase_app_distribution(
-            app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
-            service_credentials_file: "mifospay-ios/firebaseAppDistributionServiceCredentialsFile.json",
-            release_notes_file: "mifospay-ios/changelogBeta",
-            groups: "mifos-wallet-testers"
-        )
+  desc "Generate Version"
+  lane :generateVersion do
+    # Generate version file
+    gradle(task: ["versionFile"])
 
-    end
+    # Set version from file
+    ENV['VERSION'] = File.read("../version.txt").strip
+
+    # Calculate and set version code
+    commit_count = `git rev-list --count HEAD`.to_i
+    tag_count = `git tag | grep -v beta | wc -l`.to_i
+    ENV['VERSION_CODE'] = ((commit_count + tag_count) << 1).to_s
+
+    UI.success("Set VERSION=#{ENV['VERSION']} VERSION_CODE=#{ENV['VERSION_CODE']}")
+  end
+
+  desc "Generate release notes"
+  lane :generateReleaseNotes do |options|
+    branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
+    releaseNotes = changelog_from_git_commits(
+      commits_count: 1,
+      pretty: "%s%n#{options[:repoName]}/#{branchName} @ %h %n %n#{options[:actionUrl]}"
+    )
+    releaseNotes
+  end
 end
