@@ -13,7 +13,7 @@ platform :android do
   end
 
   desc "Assemble Play Store release APK"
-  lane :assembleReleaseApk do |options|
+  lane :assembleReleaseApks do |options|
     # Generate version
     generateVersion = misc.generateVersion()
 
@@ -129,18 +129,22 @@ platform :ios do
       path: "mifospay-ios/iosApp.xcodeproj"
     )
     enable_automatic_code_signing(path: "mifospay-ios/iosApp.xcodeproj")
-
+    sync_code_signing
     build_ios_app(
       project: "mifospay-ios/iosApp.xcodeproj",
       scheme: "iosApp",
       # Set configuration to debug for now
       configuration: options[:configuration],
+      export_method: "development",
     )
   end
 
-  lane :increment_version do
+  lane :increment_version do |options|
+    options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+
     latest_release = firebase_app_distribution_get_latest_release(
-      app: "1:728434912738:ios:86a7badfaed88b841a1dbb"
+      app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
+      service_credentials_file: options[:serviceCredsFile]
     )
     increment_build_number(
       xcodeproj: "mifospay-ios/iosApp.xcodeproj",
@@ -151,7 +155,8 @@ platform :ios do
   desc "Upload iOS application to Firebase App Distribution"
   lane :deploy_on_firebase do |options|
     options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
-
+    increment_version()
+    build_ios()
     releaseNotes = misc.generateReleaseNotes(
       repoName: "mobile-wallet-testing",
       actionUrl: "#{options[:actionUrl]}"

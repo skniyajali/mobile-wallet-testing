@@ -117,13 +117,9 @@ runs:
         touch ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json
         echo $FIREBASE_CREDS > ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json
 
-    - name: Increment Build Number
+    - name: Upload iOS App to Firebase Distribution
       shell: bash
-      run: bundle exec fastlane ios increment_version
-
-    - name: Build iOS App
-      shell: bash
-      run: bundle exec fastlane ios build_ios
+      run: bundle exec fastlane ios deploy_on_firebase
 
     - name: Upload iOS Artifact
       uses: actions/upload-artifact@v4
@@ -132,7 +128,3 @@ runs:
         retention-days: 1
         compression-level: 9
         path: '**/*.ipa'
-
-    - name: Upload iOS App to Firebase Distribution
-      shell: bash
-      run: bundle exec fastlane ios deploy_on_firebase
