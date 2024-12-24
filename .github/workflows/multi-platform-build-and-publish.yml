@@ -86,11 +86,6 @@ on:
         default: false
         description: Publish iOS App On App Store
 
-      build_ios:
-        type: boolean
-        default: false
-        description: Build iOS App
-
 permissions:
   contents: write
   id-token: write
