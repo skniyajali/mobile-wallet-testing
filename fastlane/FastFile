@@ -135,7 +135,7 @@ platform :ios do
       # Set configuration to debug for now
       configuration: options[:configuration],
       export_method: "development",
-      
+      skip_codesigning: "true",
     )
   end
 
