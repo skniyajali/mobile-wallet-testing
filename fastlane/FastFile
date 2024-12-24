@@ -2,7 +2,7 @@ default_platform(:android)
 
 platform :android do
   before_all do
-    ENV["SECRETS"] = ENV["PWD"] + "/keystores/"
+    ENV["KEYSTORE_DIR"] = ENV["PWD"] + "/keystores/"
   end
 
   desc "Assemble debug APKs."
@@ -100,14 +100,17 @@ platform :android do
 
   desc "Generate artifacts for the given [build] signed with the provided [keystore] and credentials."
   private_lane :buildAndSignApp do |options|
-    options[:storeFile] ||= "/keystores/release_keystore.keystore"
+    options[:storeFile] ||= "release_keystore.keystore"
+    options[:storePassword] ||= "Mifospay"
+    options[:keyAlias] ||= "key0"
+    options[:keyPassword] ||= "Mifos@123"
 
     gradle(
       task: options[:taskName],
       flavor: options[:flavor],
       build_type: options[:buildType],
       properties: {
-        "android.injected.signing.store.file" => options[:storeFile],
+        "android.injected.signing.store.file" => ENV["KEYSTORE_DIR"] + options[:storeFile],
         "android.injected.signing.store.password" => options[:storePassword],
         "android.injected.signing.key.alias" => options[:keyAlias],
         "android.injected.signing.key.password" => options[:keyPassword],

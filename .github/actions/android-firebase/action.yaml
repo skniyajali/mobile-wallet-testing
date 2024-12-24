@@ -75,13 +75,12 @@ runs:
     - name: Build Release Android App
       shell: bash
       env:
-        KEYSTORE: ${{ github.workspace }}/keystores/release_keystore.keystore
         KEYSTORE_PASSWORD: ${{ inputs.key_store_password }}
         KEYSTORE_ALIAS: ${{ inputs.key_store_alias }}
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
       run: |
         bundle exec fastlane android assembleReleaseApks \
-        storeFile: ${{ env.KEYSTORE }} \
+        storeFile: release_keystore.keystore \
         storePassword: ${{ env.KEYSTORE_PASSWORD }} \
         keyAlias: ${{ env.KEYSTORE_ALIAS }} \
         keyPassword: ${{ env.KEYSTORE_ALIAS_PASSWORD }}
