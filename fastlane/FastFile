@@ -164,6 +164,8 @@ platform :ios do
       # Set configuration to debug for now
       configuration: options[:configuration],
       skip_codesigning: "true",
+      output_directory: "mifospay-ios/build",
+      skip_archive: "true"
     )
   end
 
