@@ -100,7 +100,7 @@ platform :android do
 
   desc "Generate artifacts for the given [build] signed with the provided [keystore] and credentials."
   private_lane :buildAndSignApp do |options|
-    options[:storeFile] ||= "secrets/release_keystore.keystore"
+    options[:storeFile] ||= "/keystores/release_keystore.keystore"
 
     gradle(
       task: options[:taskName],

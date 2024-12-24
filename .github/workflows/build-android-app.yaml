@@ -16,6 +16,7 @@ on:
 
 jobs:
   build_android:
+    name: Build Android App
     runs-on: macos-latest
     permissions:
       contents: write

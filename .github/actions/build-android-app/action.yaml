@@ -69,11 +69,9 @@ runs:
       env:
         KEYSTORE: ${{ inputs.key_store }}
         GOOGLE_SERVICES: ${{ inputs.google_services }}
-      run: |
-        mkdir -p ${{ github.workspace }}/secrets
-        
+      run: |        
         # Inflate keystore
-        echo $KEYSTORE | base64 --decode > ${{ github.workspace }}/secrets/release_keystore.keystore
+        echo $KEYSTORE | base64 --decode > ${{ github.workspace }}/keystores/release_keystore.keystore
 
         # Inflate google-services.json
         echo $GOOGLE_SERVICES | base64 --decode > ${{ inputs.android_package_name }}/google-services.json
@@ -88,7 +86,7 @@ runs:
       if: ${{ inputs.build_type == 'Release' }}
       shell: bash
       env:
-        KEYSTORE: ${{ github.workspace }}/secrets/release_keystore.keystore
+        KEYSTORE: ${{ github.workspace }}/keystores/release_keystore.keystore
         KEYSTORE_PASSWORD: ${{ inputs.key_store_password }}
         KEYSTORE_ALIAS: ${{ inputs.key_store_alias }}
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}

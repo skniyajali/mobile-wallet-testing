@@ -7,6 +7,7 @@ env:
 
 jobs:
   publish_android_app_on_firebase:
+    name: Publish Android App on Firebase
     runs-on: macos-latest
     permissions:
       contents: write
