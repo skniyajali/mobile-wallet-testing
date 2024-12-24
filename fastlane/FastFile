@@ -119,7 +119,7 @@ platform :android do
   desc "Generate Version"
   lane :generateVersion do
     # Generate version file
-    gradle(task: ["versionFile"])
+    gradle(tasks: ["versionFile"])
 
     # Set version from file
     ENV['VERSION'] = File.read("../version.txt").strip
