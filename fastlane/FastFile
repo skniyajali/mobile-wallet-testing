@@ -15,7 +15,7 @@ platform :android do
   desc "Assemble Play Store release APK"
   lane :assembleReleaseApks do |options|
     # Generate version
-    generateVersion = misc.generateVersion()
+    generateVersion = generateVersion()
 
     buildAndSignApp(
       taskName: "assemble",
@@ -30,7 +30,7 @@ platform :android do
   desc "Bundle Play Store release"
   lane :bundlePlayStoreRelease do |options|
     # Generate version
-    generateVersion = misc.generateVersion()
+    generateVersion = generateVersion()
 
     buildAndSignApp(
       taskName: "bundle",
@@ -49,7 +49,7 @@ platform :android do
     options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
 
     # Generate Release Note
-    releaseNotes = misc.generateReleaseNotes(
+    releaseNotes = generateReleaseNotes(
       repoName: "mobile-wallet-testing",
       actionUrl: "#{options[:actionUrl]}"
     )
@@ -116,6 +116,32 @@ platform :android do
     )
   end
 
+  desc "Generate Version"
+  lane :generateVersion do
+    # Generate version file
+    gradle(task: ["versionFile"])
+
+    # Set version from file
+    ENV['VERSION'] = File.read("../version.txt").strip
+
+    # Calculate and set version code
+    commit_count = `git rev-list --count HEAD`.to_i
+    tag_count = `git tag | grep -v beta | wc -l`.to_i
+    ENV['VERSION_CODE'] = ((commit_count + tag_count) << 1).to_s
+
+    UI.success("Set VERSION=#{ENV['VERSION']} VERSION_CODE=#{ENV['VERSION_CODE']}")
+  end
+
+  desc "Generate release notes"
+  lane :generateReleaseNotes do |options|
+    branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
+    releaseNotes = changelog_from_git_commits(
+      commits_count: 1,
+      pretty: "%s%n#{options[:repoName]}/#{branchName} @ %h %n %n#{options[:actionUrl]}"
+    )
+    releaseNotes
+  end
+
 end
 
 platform :ios do
@@ -157,7 +183,7 @@ platform :ios do
     options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
     increment_version()
     build_ios()
-    releaseNotes = misc.generateReleaseNotes(
+    releaseNotes = generateReleaseNotes(
       repoName: "mobile-wallet-testing",
       actionUrl: "#{options[:actionUrl]}"
     )
@@ -168,6 +194,16 @@ platform :ios do
       groups: "mifos-wallet-testers"
     )
 
+  end
+
+  desc "Generate release notes"
+  lane :generateReleaseNotes do |options|
+    branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
+    releaseNotes = changelog_from_git_commits(
+      commits_count: 1,
+      pretty: "%s%n#{options[:repoName]}/#{branchName} @ %h %n %n#{options[:actionUrl]}"
+    )
+    releaseNotes
   end
 end
 
@@ -221,29 +257,4 @@ platform :misc do
     File.open(buildConfigPath, "w") { |buildConfigFile| buildConfigFile << buildConfigText }
   end
 
-  desc "Generate Version"
-  lane :generateVersion do
-    # Generate version file
-    gradle(task: ["versionFile"])
-
-    # Set version from file
-    ENV['VERSION'] = File.read("../version.txt").strip
-
-    # Calculate and set version code
-    commit_count = `git rev-list --count HEAD`.to_i
-    tag_count = `git tag | grep -v beta | wc -l`.to_i
-    ENV['VERSION_CODE'] = ((commit_count + tag_count) << 1).to_s
-
-    UI.success("Set VERSION=#{ENV['VERSION']} VERSION_CODE=#{ENV['VERSION_CODE']}")
-  end
-
-  desc "Generate release notes"
-  lane :generateReleaseNotes do |options|
-    branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
-    releaseNotes = changelog_from_git_commits(
-      commits_count: 1,
-      pretty: "%s%n#{options[:repoName]}/#{branchName} @ %h %n %n#{options[:actionUrl]}"
-    )
-    releaseNotes
-  end
 end

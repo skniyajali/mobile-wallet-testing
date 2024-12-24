@@ -71,7 +71,7 @@ runs:
         touch ${{ github.workspace }}/secrets/playStorePublishServiceCredentialsFile.json
         echo $PLAYSTORE_CREDS | base64 --decode > ${{ github.workspace }}/secrets/playStorePublishServiceCredentialsFile.json
 
-    - name: Build Bundle Android App
+    - name: Bundle Android App
       shell: bash
       env:
         KEYSTORE: ${{ github.workspace }}/secrets/release_keystore.keystore
@@ -79,7 +79,7 @@ runs:
         KEYSTORE_ALIAS: ${{ inputs.key_store_alias }}
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
       run: |
-        bundle exec fastlane android assembleReleaseApks \
+        bundle exec fastlane android bundlePlayStoreRelease \
         storeFile: ${{ env.KEYSTORE }} \
         storePassword: ${{ env.KEYSTORE_PASSWORD }} \
         keyAlias: ${{ env.KEYSTORE_ALIAS }} \
