@@ -56,12 +56,17 @@ runs:
     - name: Inflate Secrets
       shell: bash
       env:
+        GOOGLE_SERVICES: ${{ inputs.google_services }}
         FIREBASE_CREDS: ${{ inputs.firebase_creds }}
+        KEYSTORE: ${{ inputs.keystore_file }}
       run: |
         mkdir -p ${{ github.workspace }}/secrets
         
         # Inflate google-services.json
         echo $GOOGLE_SERVICES | base64 --decode > ${{ inputs.android_package_name }}/google-services.json
+        
+        # Inflate keystore
+        echo $KEYSTORE | base64 --decode > ${{ github.workspace }}/secrets/release_keystore.keystore
         
         # Inflate Firebase credentials
         touch ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json

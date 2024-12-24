@@ -12,7 +12,7 @@ platform :android do
     )
   end
 
-  desc "Assemble Play Store release APK"
+  desc "Assemble Release APK"
   lane :assembleReleaseApks do |options|
     # Generate version
     generateVersion = generateVersion()
@@ -160,7 +160,6 @@ platform :ios do
       scheme: "iosApp",
       # Set configuration to debug for now
       configuration: options[:configuration],
-      export_method: "development",
       skip_codesigning: "true",
     )
   end
