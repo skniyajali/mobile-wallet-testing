@@ -34,6 +34,7 @@ platform :android do
 
     buildAndSignApp(
       taskName: "bundle",
+      flavor: "prod",
       buildType: "Release",
       storeFile: options[:storeFile],
       storePassword: options[:storePassword],
@@ -65,7 +66,7 @@ platform :android do
 
   desc "Deploy internal tracks to Google Play"
   lane :deploy_internal do |options|
-    options[:aabFile] ||= "mifospay-android/build/outputs/bundle/prod/release/mifospay-android-prod-release.aab"
+    options[:aabFile] ||= "mifospay-android/build/outputs/bundle/prodRelease/mifospay-android-prod-release.aab"
     upload_to_play_store(
       track: 'internal',
       aab: options[:aabFile],
@@ -128,14 +129,13 @@ platform :ios do
       use_automatic_signing: true,
       path: "mifospay-ios/iosApp.xcodeproj"
     )
-    enable_automatic_code_signing(path: "mifospay-ios/iosApp.xcodeproj")
-    sync_code_signing
     build_ios_app(
       project: "mifospay-ios/iosApp.xcodeproj",
       scheme: "iosApp",
       # Set configuration to debug for now
       configuration: options[:configuration],
       export_method: "development",
+      
     )
   end
 
