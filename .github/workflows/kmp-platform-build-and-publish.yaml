@@ -249,6 +249,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Java development environment
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Cache Gradle dependencies and build outputs to speed up future builds
+      - name: Cache Gradle and build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
       # Generate version number
       - name: Generate Release Number
         id: rel_number
