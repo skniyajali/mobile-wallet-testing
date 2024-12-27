@@ -21,8 +21,8 @@ jobs:
 
           keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
           keystore_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
-          key_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
-          key_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          keystore_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          keystore_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
 
           google_services: ${{ secrets.GOOGLESERVICES }}
           firebase_creds: ${{ secrets.FIREBASECREDS }}

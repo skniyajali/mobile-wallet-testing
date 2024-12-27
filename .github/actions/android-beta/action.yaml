@@ -20,10 +20,10 @@ inputs:
   keystore_password:
     description: 'Password for the keystore file'
     required: true
-  key_alias:
+  keystore_alias:
     description: 'Key alias for the keystore file'
     required: true
-  key_password:
+  keystore_alias_password:
     description: 'Password for the key alias'
     required: true
 
@@ -74,9 +74,9 @@ runs:
     - name: Bundle Android App
       shell: bash
       env:
-        KEYSTORE_PASSWORD: ${{ inputs.key_store_password }}
-        KEYSTORE_ALIAS: ${{ inputs.key_store_alias }}
-        KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
+        KEYSTORE_PASSWORD: ${{ inputs.keystore_password }}
+        KEYSTORE_ALIAS: ${{ inputs.keystore_alias }}
+        KEYSTORE_ALIAS_PASSWORD: ${{ inputs.keystore_alias_password }}
       run: |
         bundle exec fastlane android bundlePlayStoreRelease \
         storeFile:release_keystore.keystore \

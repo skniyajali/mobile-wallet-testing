@@ -13,19 +13,19 @@ inputs:
     description: 'Type of build to perform'
     required: true
     default: 'Debug'
-  key_store:
-    description: 'Base64 encoded keystore file'
-    required: false
   google_services:
     description: 'Base64 encoded google-services.json file'
     required: false
-  key_store_password:
+  keystore_file:
+    description: 'Base64 encoded keystore file'
+    required: false
+  keystore_password:
     description: 'Password for the keystore file'
     required: false
-  key_store_alias:
+  keystore_alias:
     description: 'Alias for the keystore file'
     required: false
-  key_store_alias_password:
+  keystore_alias_password:
     description: 'Password for the keystore alias'
     required: false
 
@@ -67,7 +67,7 @@ runs:
       if: ${{ inputs.build_type == 'Release' }}
       shell: bash
       env:
-        KEYSTORE: ${{ inputs.key_store }}
+        KEYSTORE: ${{ inputs.keystore_file }}
         GOOGLE_SERVICES: ${{ inputs.google_services }}
       run: |        
         # Inflate keystore
@@ -86,9 +86,9 @@ runs:
       if: ${{ inputs.build_type == 'Release' }}
       shell: bash
       env:
-        KEYSTORE_PASSWORD: ${{ inputs.key_store_password }}
-        KEYSTORE_ALIAS: ${{ inputs.key_store_alias }}
-        KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
+        KEYSTORE_PASSWORD: ${{ inputs.keystore_password }}
+        KEYSTORE_ALIAS: ${{ inputs.keystore_alias }}
+        KEYSTORE_ALIAS_PASSWORD: ${{ inputs.keystore_alias_password }}
       run: |
         bundle exec fastlane android assembleReleaseApks \
         storeFile:release_keystore.keystore \

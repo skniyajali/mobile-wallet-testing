@@ -33,7 +33,7 @@ jobs:
           android_package_name: ${{ inputs.android_package_name }}
           build_type: ${{ inputs.build_type }}
           google_services: ${{ secrets.GOOGLESERVICES }}
-          key_store: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
-          key_store_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
-          key_store_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
-          key_store_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}
+          keystore_file: ${{ secrets.ORIGINAL_KEYSTORE_FILE }}
+          keystore_password: ${{ secrets.ORIGINAL_KEYSTORE_FILE_PASSWORD }}
+          keystore_alias: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS }}
+          keystore_alias_password: ${{ secrets.ORIGINAL_KEYSTORE_ALIAS_PASSWORD }}

@@ -26,7 +26,6 @@ jobs:
         uses: ./.github/actions/ios-firebase
         with:
           ios_package_name: ${{ inputs.ios_package_name }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           firebase_creds: ${{ secrets.FIREBASECREDS }}
-          target_branch: 'dev'
+          tester_groups: 'mifos-wallet-testers'
 
