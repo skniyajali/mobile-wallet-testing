@@ -1,0 +1,63 @@
+name: Cancel Specific Workflows
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_id:
+        description: 'ID of the workflow to cancel (comma-separated for multiple)'
+        required: true
+      run_state:
+        description: 'State of runs to cancel (queued, in_progress, or all)'
+        required: true
+        default: 'in_progress'
+        type: choice
+        options:
+          - all
+          - queued
+          - in_progress
+      reason:
+        description: 'Reason for cancellation'
+        required: false
+        default: 'Manually cancelled via workflow'
+
+jobs:
+  cancel-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Workflow Runs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflowIds = context.payload.inputs.workflow_id.split(',').map(id => id.trim());
+            const runState = context.payload.inputs.run_state;
+            const cancelReason = context.payload.inputs.reason;
+            
+            for (const workflowId of workflowIds) {
+              console.log(`Processing workflow ID: ${workflowId}`);
+            
+              // Get all workflow runs
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflowId,
+                status: runState === 'all' ? ['queued', 'in_progress'] : [runState]
+              });
+            
+              console.log(`Found ${runs.data.total_count} runs to cancel`);
+            
+              // Cancel each run
+              for (const run of runs.data.workflow_runs) {
+                console.log(`Cancelling run ${run.id}`);
+                try {
+                  await github.rest.actions.cancelWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id
+                  });
+                  console.log(`Successfully cancelled run ${run.id}`);
+                } catch (error) {
+                  console.error(`Failed to cancel run ${run.id}: ${error.message}`);
+                }
+              }
+            }
