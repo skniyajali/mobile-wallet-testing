@@ -1,10 +1,6 @@
 default_platform(:android)
 
 platform :android do
-  before_all do
-    ENV["KEYSTORE_DIR"] = ENV["PWD"] + "/keystores/"
-  end
-
   desc "Assemble debug APKs."
   lane :assembleDebugApks do |options|
     gradle(
@@ -14,6 +10,11 @@ platform :android do
 
   desc "Assemble Release APK"
   lane :assembleReleaseApks do |options|
+    options[:storeFile] ||= "release_keystore.keystore"
+    options[:storePassword] ||= "Mifospay"
+    options[:keyAlias] ||= "key0"
+    options[:keyPassword] ||= "Mifos@123"
+
     # Generate version
     generateVersion = generateVersion()
 
@@ -29,8 +30,22 @@ platform :android do
 
   desc "Bundle Play Store release"
   lane :bundlePlayStoreRelease do |options|
+    options[:storeFile] ||= "release_keystore.keystore"
+    options[:storePassword] ||= "Mifospay"
+    options[:keyAlias] ||= "key0"
+    options[:keyPassword] ||= "Mifos@123"
+
     # Generate version
     generateVersion = generateVersion()
+
+    # Generate Release Note
+    releaseNotes = generateReleaseNotes(
+      repoName: "mobile-wallet-testing",
+    )
+
+    # Write the generated release notes to default.txt
+    buildConfigPath = "metadata/android/en-GB/changelogs/default.txt"
+    File.write(buildConfigPath, releaseNotes)
 
     buildAndSignApp(
       taskName: "bundle",
@@ -47,11 +62,11 @@ platform :android do
   lane :deploy_on_firebase do |options|
     options[:apkFile] ||= "mifospay-android/build/outputs/apk/prod/release/mifospay-android-prod-release.apk"
     options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    options[:groups] ||= "mifos-wallet-testers"
 
     # Generate Release Note
     releaseNotes = generateReleaseNotes(
       repoName: "mobile-wallet-testing",
-      actionUrl: "#{options[:actionUrl]}"
     )
 
     firebase_app_distribution(
@@ -59,7 +74,7 @@ platform :android do
       android_artifact_type: "APK",
       android_artifact_path: options[:apkFile],
       service_credentials_file: options[:serviceCredsFile],
-      groups: "mifos-wallet-testers",
+      groups: options[:groups],
       release_notes: "#{releaseNotes}",
     )
   end
@@ -94,23 +109,33 @@ platform :android do
       track: 'beta',
       track_promote_to: 'production',
       skip_upload_changelogs: true,
-      sync_image_upload: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
     )
   end
 
   desc "Generate artifacts for the given [build] signed with the provided [keystore] and credentials."
   private_lane :buildAndSignApp do |options|
-    options[:storeFile] ||= "release_keystore.keystore"
-    options[:storePassword] ||= "Mifospay"
-    options[:keyAlias] ||= "key0"
-    options[:keyPassword] ||= "Mifos@123"
+    # Get the project root directory
+    project_dir = File.expand_path('..', Dir.pwd)
+
+    # Construct the absolute path to the keystore
+    keystore_path = File.join(project_dir, 'keystores', options[:storeFile])
+
+    # Check if keystore exists
+    unless File.exist?(keystore_path)
+      UI.error "Keystore file not found at: #{keystore_path}"
+      UI.error "Please ensure the keystore file exists at the correct location"
+      exit 1  # Exit with error code 1
+    end
 
     gradle(
       task: options[:taskName],
       flavor: options[:flavor],
       build_type: options[:buildType],
       properties: {
-        "android.injected.signing.store.file" => ENV["KEYSTORE_DIR"] + options[:storeFile],
+        "android.injected.signing.store.file" => keystore_path,
         "android.injected.signing.store.password" => options[:storePassword],
         "android.injected.signing.key.alias" => options[:keyAlias],
         "android.injected.signing.key.password" => options[:keyPassword],
@@ -140,7 +165,6 @@ platform :android do
     branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
     releaseNotes = changelog_from_git_commits(
       commits_count: 1,
-      pretty: "%s%n#{options[:repoName]}/#{branchName} @ %h %n %n#{options[:actionUrl]}"
     )
     releaseNotes
   end
@@ -185,17 +209,18 @@ platform :ios do
   desc "Upload iOS application to Firebase App Distribution"
   lane :deploy_on_firebase do |options|
     options[:serviceCredsFile] ||= "secrets/firebaseAppDistributionServiceCredentialsFile.json"
+    options[:groups] ||= "mifos-wallet-testers"
+
     increment_version()
     build_ios()
     releaseNotes = generateReleaseNotes(
       repoName: "mobile-wallet-testing",
-      actionUrl: "#{options[:actionUrl]}"
     )
     release = firebase_app_distribution(
       app: "1:728434912738:ios:86a7badfaed88b841a1dbb",
       service_credentials_file: options[:serviceCredsFile],
       release_notes_file: "#{releaseNotes}",
-      groups: "mifos-wallet-testers"
+      groups: options[:groups]
     )
 
   end
@@ -205,60 +230,7 @@ platform :ios do
     branchName = `git rev-parse --abbrev-ref HEAD`.chomp()
     releaseNotes = changelog_from_git_commits(
       commits_count: 1,
-      pretty: "%s%n#{options[:repoName]}/#{branchName} @ %h %n %n#{options[:actionUrl]}"
     )
     releaseNotes
   end
-end
-
-platform :misc do
-  desc "Apply build version information"
-  fastlane_require "time"
-  lane :setBuildVersionInfo do |options|
-    # Read-in app build config file.
-    buildConfigPath = "../#{options[:packageName]}/build.gradle.kts"
-    buildConfigFile = File.open(buildConfigPath)
-    buildConfigText = buildConfigFile.read
-    buildConfigFile.close
-
-    currentVersionCode = buildConfigText.match(/versionCode = (\d+)/).captures[0]
-    currentVersionName = buildConfigText.match(/versionName = "(.+)"/).captures[0]
-
-    if options[:versionName].nil? or options[:versionName].to_s.empty?
-      puts "Fetching latest tags from origin..."
-      `git fetch --prune --no-recurse-submodules --filter=tree:0 --depth=1 --tags origin`
-      puts "Getting latest version name from previous git tag..."
-      latestTag = `git describe --tags $(git rev-list --tags --max-count=1)`.chomp()
-      puts "Using tag #{latestTag} to calculate version name..."
-      latestTag.slice!(0)
-      puts "Current version name resolved to #{latestTag}."
-
-      versionParts = latestTag.split(".")
-      currentMajor = versionParts[0]
-      currentMinor = versionParts[1]
-      currentRevision = versionParts[2]
-
-      currentDate = Time.new
-      major = currentDate.year.to_s
-      minor = currentDate.strftime "%-m"
-
-      revision = 0
-      if currentMajor == major and currentMinor == minor
-        revision = currentRevision.to_i + 1
-      end
-      nextVersionName = "#{major}.#{minor}.#{revision}"
-    else
-      nextVersionName = options[:versionName].to_s
-    end
-
-    # Replace version information.
-    puts "Setting version code to #{options[:versionCode]}."
-    buildConfigText.gsub!("versionCode = #{currentVersionCode}", "versionCode = #{options[:versionCode]}")
-    puts "Setting version name to #{nextVersionName}."
-    buildConfigText.gsub!("versionName = \"#{currentVersionName}\"", "versionName = \"#{nextVersionName}\"")
-
-    # Save changes
-    File.open(buildConfigPath, "w") { |buildConfigFile| buildConfigFile << buildConfigText }
-  end
-
 end

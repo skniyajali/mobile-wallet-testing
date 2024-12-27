@@ -15,6 +15,38 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Android
 
+### android assembleDebugApks
+
+```sh
+[bundle exec] fastlane android assembleDebugApks
+```
+
+Assemble debug APKs.
+
+### android assembleReleaseApks
+
+```sh
+[bundle exec] fastlane android assembleReleaseApks
+```
+
+Assemble Release APK
+
+### android bundlePlayStoreRelease
+
+```sh
+[bundle exec] fastlane android bundlePlayStoreRelease
+```
+
+Bundle Play Store release
+
+### android deploy_on_firebase
+
+```sh
+[bundle exec] fastlane android deploy_on_firebase
+```
+
+Publish Release Play Store artifacts to Firebase App Distribution
+
 ### android deploy_internal
 
 ```sh
@@ -39,13 +71,21 @@ Promote internal tracks to beta on Google Play
 
 Promote beta tracks to production on Google Play
 
-### android deploy_on_firebase
+### android generateVersion
 
 ```sh
-[bundle exec] fastlane android deploy_on_firebase
+[bundle exec] fastlane android generateVersion
 ```
 
-Upload Android application to Firebase App Distribution
+Generate Version
+
+### android generateReleaseNotes
+
+```sh
+[bundle exec] fastlane android generateReleaseNotes
+```
+
+Generate release notes
 
 ----
 
@@ -60,6 +100,14 @@ Upload Android application to Firebase App Distribution
 
 Build iOS application
 
+### ios increment_version
+
+```sh
+[bundle exec] fastlane ios increment_version
+```
+
+
+
 ### ios deploy_on_firebase
 
 ```sh
@@ -67,6 +115,14 @@ Build iOS application
 ```
 
 Upload iOS application to Firebase App Distribution
+
+### ios generateReleaseNotes
+
+```sh
+[bundle exec] fastlane ios generateReleaseNotes
+```
+
+Generate release notes
 
 ----
 

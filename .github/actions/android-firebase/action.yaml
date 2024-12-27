@@ -30,10 +30,9 @@ inputs:
     description: 'Firebase credentials JSON file'
     required: true
 
-  action_url:
-    description: 'Current Action URL'
-    required: false
-
+  tester_groups:
+    description: 'Firebase Tester Group'
+    required: true
 
 runs:
   using: composite
@@ -60,17 +59,17 @@ runs:
         FIREBASE_CREDS: ${{ inputs.firebase_creds }}
         KEYSTORE: ${{ inputs.keystore_file }}
       run: |
-        mkdir -p ${{ github.workspace }}/secrets
+        mkdir -p secrets
         
         # Inflate google-services.json
         echo $GOOGLE_SERVICES | base64 --decode > ${{ inputs.android_package_name }}/google-services.json
         
         # Inflate keystore
-        echo $KEYSTORE | base64 --decode > ${{ github.workspace }}/keystores/release_keystore.keystore
+        echo $KEYSTORE | base64 --decode > keystores/release_keystore.keystore
         
         # Inflate Firebase credentials
-        touch ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json
-        echo $FIREBASE_CREDS | base64 --decode > ${{ github.workspace }}/secrets/firebaseAppDistributionServiceCredentialsFile.json
+        touch secrets/firebaseAppDistributionServiceCredentialsFile.json
+        echo $FIREBASE_CREDS | base64 --decode > secrets/firebaseAppDistributionServiceCredentialsFile.json
 
     - name: Build Release Android App
       shell: bash
@@ -80,14 +79,14 @@ runs:
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
       run: |
         bundle exec fastlane android assembleReleaseApks \
-        storeFile: release_keystore.keystore \
-        storePassword: ${{ env.KEYSTORE_PASSWORD }} \
-        keyAlias: ${{ env.KEYSTORE_ALIAS }} \
-        keyPassword: ${{ env.KEYSTORE_ALIAS_PASSWORD }}
+        storeFile:release_keystore.keystore \
+        storePassword:${{ env.KEYSTORE_PASSWORD }} \
+        keyAlias:${{ env.KEYSTORE_ALIAS }} \
+        keyPassword:${{ env.KEYSTORE_ALIAS_PASSWORD }}
 
     # Deploy to Firebase App Distribution
     - name: ☁️ Deploy to Firebase
       shell: bash
-      run: | 
+      run: |
         bundle exec fastlane android deploy_on_firebase \
-        actionUrl: ${{ inputs.action_url }}
+        groups:${{ inputs.tester_groups }}

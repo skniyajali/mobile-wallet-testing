@@ -1,0 +1,4 @@
+chore: Updated Fastlane configuration for keystore handling
+- Updated Fastlane to use `KEYSTORE_DIR` environment variable for keystore location.
+- Set default values for keystore, alias, and passwords in the `buildAndSignApp` lane.
+- Removed hardcoded keystore path from GitHub Actions workflows and used defaults defined in Fastlane.
