@@ -49,7 +49,6 @@ platform :android do
 
     buildAndSignApp(
       taskName: "bundle",
-      flavor: "prod",
       buildType: "Release",
       storeFile: options[:storeFile],
       storePassword: options[:storePassword],
@@ -132,7 +131,6 @@ platform :android do
 
     gradle(
       task: options[:taskName],
-      flavor: options[:flavor],
       build_type: options[:buildType],
       properties: {
         "android.injected.signing.store.file" => keystore_path,

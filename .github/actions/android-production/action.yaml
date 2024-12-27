@@ -36,10 +36,10 @@ runs:
       env:
         PLAYSTORE_CREDS: ${{ inputs.playstore_creds }}
       run: |
-        mkdir -p ${{ github.workspace }}/secrets
+        mkdir -p secrets
         # Inflate PlayStore credentials
-        touch ${{ github.workspace }}/secrets/playStorePublishServiceCredentialsFile.json
-        echo $PLAYSTORE_CREDS  | base64 --decode > ${{ github.workspace }}/secrets/playStorePublishServiceCredentialsFile.json
+        touch secrets/playStorePublishServiceCredentialsFile.json
+        echo $PLAYSTORE_CREDS  | base64 --decode > secrets/playStorePublishServiceCredentialsFile.json
     
 
     # Promote Android App to Production

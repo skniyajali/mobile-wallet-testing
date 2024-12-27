@@ -71,7 +71,7 @@ runs:
         GOOGLE_SERVICES: ${{ inputs.google_services }}
       run: |        
         # Inflate keystore
-        echo $KEYSTORE | base64 --decode > ${{ github.workspace }}/keystores/release_keystore.keystore
+        echo $KEYSTORE | base64 --decode > keystores/release_keystore.keystore
 
         # Inflate google-services.json
         echo $GOOGLE_SERVICES | base64 --decode > ${{ inputs.android_package_name }}/google-services.json
@@ -91,10 +91,10 @@ runs:
         KEYSTORE_ALIAS_PASSWORD: ${{ inputs.key_store_alias_password }}
       run: |
         bundle exec fastlane android assembleReleaseApks \
-        storeFile: release_keystore.keystore \
-        storePassword: ${{ env.KEYSTORE_PASSWORD }} \
-        keyAlias: ${{ env.KEYSTORE_ALIAS }} \
-        keyPassword: ${{ env.KEYSTORE_ALIAS_PASSWORD }}
+        storeFile:release_keystore.keystore \
+        storePassword:${{ env.KEYSTORE_PASSWORD }} \
+        keyAlias:${{ env.KEYSTORE_ALIAS }} \
+        keyPassword:${{ env.KEYSTORE_ALIAS_PASSWORD }}
 
     - name: Upload APK as artifact
       uses: actions/upload-artifact@v4
