@@ -52,7 +52,7 @@ jobs:
   # Build and publish web app
   build_android:
     name: Build Android Application
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     permissions:
       contents: write
     steps:
